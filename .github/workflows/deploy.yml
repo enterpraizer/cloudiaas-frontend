@@ -8,10 +8,15 @@ jobs:
   deploy:
     name: Build & Deploy to Vercel
     runs-on: ubuntu-latest
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
     steps:
+      # Деплой выполняется только если в репозитории настроены секреты Vercel.
+      # Сам токен в окружение job не попадает: дальше передаётся только флаг.
+      - name: Check Vercel secrets
+        id: vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: echo "enabled=$([ -n "$VERCEL_TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -34,8 +39,7 @@ jobs:
           VITE_APP_NAME: CloudIaaS
 
       - name: Deploy to Vercel
-        # Деплой выполняется только если в репозитории настроены секреты Vercel
-        if: env.VERCEL_TOKEN != ''
+        if: steps.vercel.outputs.enabled == 'true'
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
