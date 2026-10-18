@@ -2,7 +2,7 @@
 
 Веб-интерфейс мультитенантной IaaS-платформы CloudIaaS. Платформа даёт каждому тенанту изолированное рабочее пространство с квотами на ресурсы, где можно создавать виртуальные машины и сети. Гипервизор эмулируется Docker-контейнерами. Отличительная функция — AI-рекомендации: по текстовому описанию нагрузки LLM (Gemini) подбирает конфигурацию ВМ с учётом оставшейся квоты, а по метрикам использования периодически предлагает оптимизации (метрики в проекте симулируются). Этот репозиторий содержит клиентскую часть: SPA на React и TypeScript, включая админ-панель для операторов платформы.
 
-Серверная часть: [enterpraizer/Backend](https://github.com/enterpraizer/Backend) (FastAPI, Celery, PostgreSQL, Redis).
+Серверная часть: [enterpraizer/cloudiaas-backend](https://github.com/enterpraizer/cloudiaas-backend) (FastAPI, Celery, PostgreSQL, Redis).
 
 ## Возможности
 
@@ -21,7 +21,7 @@
 - **Оптимизации.** На странице ВМ отображаются рекомендации со статусом `pending` (`VMSuggestionCard`): текст, уверенность, кнопки «Применить» и «Отклонить». Принятие рекомендации с новой конфигурацией выполняет на сервере остановку, изменение размера и запуск ВМ.
 - **Ручной анализ.** Кнопка запускает `POST /vms/{id}/trigger-analyze`; сервер разрешает это не чаще раза в 24 часа, а интерфейс показывает оставшееся время ожидания.
 
-Логика работы LLM (модель, few-shot, JSON-вывод, ограничение по квоте, fallback) описана в [README бэкенда](https://github.com/enterpraizer/Backend#ai-рекомендации).
+Логика работы LLM (модель, few-shot, JSON-вывод, ограничение по квоте, fallback) описана в [README бэкенда](https://github.com/enterpraizer/cloudiaas-backend#ai-рекомендации).
 
 ## Маршруты
 
@@ -75,11 +75,11 @@ Page / Component
 
 ## Запуск
 
-Нужен Node.js 20 (на нём работает CI) и запущенный [бэкенд](https://github.com/enterpraizer/Backend).
+Нужен Node.js 20 (на нём работает CI) и запущенный [бэкенд](https://github.com/enterpraizer/cloudiaas-backend).
 
 ```bash
-git clone https://github.com/enterpraizer/Frontend.git
-cd Frontend
+git clone https://github.com/enterpraizer/cloudiaas-frontend.git
+cd cloudiaas-frontend
 cp .env.example .env     # при необходимости поправьте адрес API
 npm install
 npm run dev              # http://localhost:5173
@@ -142,4 +142,4 @@ src/
 
 ## Связанные репозитории
 
-- Backend: [enterpraizer/Backend](https://github.com/enterpraizer/Backend)
+- Backend: [enterpraizer/cloudiaas-backend](https://github.com/enterpraizer/cloudiaas-backend)
