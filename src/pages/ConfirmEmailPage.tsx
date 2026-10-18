@@ -10,17 +10,16 @@ type Status = 'loading' | 'success' | 'error';
 export default function ConfirmEmailPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') ?? '';
-  const [status, setStatus] = useState<Status>('loading');
+  const [result, setResult] = useState<Exclude<Status, 'loading'> | null>(null);
+  // A missing token is an error right away; otherwise wait for the API result.
+  const status: Status = !token ? 'error' : (result ?? 'loading');
 
   useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      return;
-    }
+    if (!token) return;
     authApi
       .confirmEmail(token)
-      .then(() => setStatus('success'))
-      .catch(() => setStatus('error'));
+      .then(() => setResult('success'))
+      .catch(() => setResult('error'));
   }, [token]);
 
   return (

@@ -20,6 +20,8 @@ const queryClient = new QueryClient({
   },
 });
 
+// Entry point has no exports by design, so Fast Refresh does not apply here.
+// eslint-disable-next-line react-refresh/only-export-components
 const ErrorFallback = ({ error }: FallbackProps) => (
   <div role="alert" style={{ padding: '2rem' }}>
     <p>Something went wrong:</p>
