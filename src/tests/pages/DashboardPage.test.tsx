@@ -36,16 +36,16 @@ describe('DashboardPage', () => {
 
     // mockVMSummary: total=5, running=3, stopped=2
     await waitFor(() => {
-      expect(screen.getByText('Total VMs')).toBeInTheDocument();
+      expect(screen.getByText('Всего VM')).toBeInTheDocument();
       expect(screen.getByText('5')).toBeInTheDocument();
-      expect(screen.getByText('Running')).toBeInTheDocument();
+      expect(screen.getByText('Запущено')).toBeInTheDocument();
       expect(screen.getByText('3')).toBeInTheDocument();
-      expect(screen.getByText('Stopped')).toBeInTheDocument();
+      expect(screen.getByText('Остановлено')).toBeInTheDocument();
       expect(screen.getByText('2')).toBeInTheDocument();
     });
   });
 
-  it('shows "Quota Exceeded" banner when a resource pct = 100', async () => {
+  it('shows "Квота исчерпана" banner when a resource pct = 100', async () => {
     // Override usage handler to return vcpu at 100%
     server.use(
       http.get('http://localhost:8000/dashboard/usage', () =>
@@ -59,11 +59,11 @@ describe('DashboardPage', () => {
     });
 
     await waitFor(() => {
-      // AlertTitle: "Quota Exceeded" (capital E, differs from ResourceGauge's "Quota exceeded")
-      expect(screen.getByText('Quota Exceeded')).toBeInTheDocument();
+      // AlertTitle: "Квота исчерпана" (exact match; the gauge status label is "🔴 Квота исчерпана")
+      expect(screen.getByText('Квота исчерпана')).toBeInTheDocument();
       // Description has <strong>vCPU</strong> — match against the alert container's textContent
       const alert = screen.getByRole('alert');
-      expect(alert.textContent).toMatch(/you have reached your vCPU quota/i);
+      expect(alert.textContent).toMatch(/Вы достигли лимита vCPU/);
     });
   });
 });

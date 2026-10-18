@@ -54,7 +54,7 @@ export const mockResourceUsageExceeded = {
   vms:     { used: 2,    max: 4,    pct: 50 },
 };
 
-export const mockVMSummary = { total: 5, running: 3, stopped: 2, pending: 0 };
+export const mockVMSummary = { total: 5, running: 3, stopped: 2, pending: 0, terminated: 0 };
 
 export const mockAdminStats = {
   total_tenants: 10,
@@ -92,6 +92,10 @@ export const handlers = [
     HttpResponse.json(mockVMs)
   ),
 
+  http.get(`${BASE}/vms/:vmId/suggestions`, () =>
+    HttpResponse.json([])
+  ),
+
   http.post(`${BASE}/vms`, () => {
     vmCreateCallCount += 1;
     if (vmCreateCallCount % 2 === 0) {
@@ -120,7 +124,7 @@ export const handlers = [
     HttpResponse.json(mockResourceUsage)
   ),
 
-  http.get(`${BASE}/dashboard/vms-summary`, () =>
+  http.get(`${BASE}/dashboard/vms/summary`, () =>
     HttpResponse.json(mockVMSummary)
   ),
 

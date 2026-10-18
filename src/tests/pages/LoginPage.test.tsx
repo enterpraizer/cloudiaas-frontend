@@ -23,7 +23,7 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />, { route: '/login', initialEntries: ['/login'] });
 
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
       // loginSchema: username & password both min(1, 'Required')
@@ -41,9 +41,9 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />, { route: '/login', initialEntries: ['/login'] });
 
-    await user.type(screen.getByLabelText(/username/i), 'alice');
-    await user.type(screen.getByLabelText(/password/i), 'wrongpassword');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.type(screen.getByLabelText('Логин'), 'alice');
+    await user.type(screen.getByLabelText('Пароль'), 'wrongpassword');
+    await user.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(
@@ -56,9 +56,9 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />, { route: '/login', initialEntries: ['/login'] });
 
-    await user.type(screen.getByLabelText(/username/i), 'alice');
-    await user.type(screen.getByLabelText(/password/i), 'correctpassword');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.type(screen.getByLabelText('Логин'), 'alice');
+    await user.type(screen.getByLabelText('Пароль'), 'correctpassword');
+    await user.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
