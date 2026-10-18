@@ -1,73 +1,145 @@
-# React + TypeScript + Vite
+# CloudIaaS — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Веб-интерфейс мультитенантной IaaS-платформы CloudIaaS. Платформа даёт каждому тенанту изолированное рабочее пространство с квотами на ресурсы, где можно создавать виртуальные машины и сети. Гипервизор эмулируется Docker-контейнерами. Отличительная функция — AI-рекомендации: по текстовому описанию нагрузки LLM (Gemini) подбирает конфигурацию ВМ с учётом оставшейся квоты, а по метрикам использования периодически предлагает оптимизации (метрики в проекте симулируются). Этот репозиторий содержит клиентскую часть: SPA на React и TypeScript, включая админ-панель для операторов платформы.
 
-Currently, two official plugins are available:
+Серверная часть: [enterpraizer/Backend](https://github.com/enterpraizer/Backend) (FastAPI, Celery, PostgreSQL, Redis).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Возможности
 
-## React Compiler
+- **Аутентификация.** Регистрация с подтверждением почты, вход, автоматическое обновление access-токена по refresh-токену, смена пароля. После регистрации — онбординг: создание рабочего пространства (тенанта).
+- **Дашборд.** Использование квот по vCPU, RAM, диску и числу ВМ (индикаторы с цветовыми порогами), сводка по ВМ и сетям, лента последних действий. Данные обновляются каждые 30 секунд.
+- **Виртуальные машины.** Список, создание, запуск, остановка, удаление; страница ВМ с деталями и подключением к сетям. При превышении квоты показывается понятное сообщение с названием ресурса.
+- **Виртуальные сети.** Список, создание (имя, CIDR), удаление.
+- **AI-рекомендации.** Подбор конфигурации при создании ВМ и рекомендации по оптимизации на странице ВМ (см. ниже).
+- **Профиль.** Вкладки «Аккаунт», «Рабочее пространство», «Безопасность».
+- **Админ-панель** (только роль `admin`). Статистика платформы с графиками, управление тенантами и их квотами, все ВМ всех тенантов, журнал аудита с экспортом в CSV.
+- **Интерфейс.** Светлая и тёмная темы, адаптивная боковая панель (на мобильных — выезжающее меню, на планшетах — только иконки), skeleton-заглушки, toast-уведомления.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## AI-рекомендации в интерфейсе
 
-## Expanding the ESLint configuration
+- **Подбор конфигурации.** В окне создания ВМ пользователь описывает нагрузку своими словами и нажимает кнопку подбора. Клиент отправляет `POST /vms/suggest` и показывает результат в карточке `AISuggestionCard`: vCPU, RAM и диск, шкала уверенности модели и текстовое обоснование. «Принять» подставляет значения в форму, «Игнорировать» скрывает карточку.
+- **Оптимизации.** На странице ВМ отображаются рекомендации со статусом `pending` (`VMSuggestionCard`): текст, уверенность, кнопки «Применить» и «Отклонить». Принятие рекомендации с новой конфигурацией выполняет на сервере остановку, изменение размера и запуск ВМ.
+- **Ручной анализ.** Кнопка запускает `POST /vms/{id}/trigger-analyze`; сервер разрешает это не чаще раза в 24 часа, а интерфейс показывает оставшееся время ожидания.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Логика работы LLM (модель, few-shot, JSON-вывод, ограничение по квоте, fallback) описана в [README бэкенда](https://github.com/enterpraizer/Backend#ai-рекомендации).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Маршруты
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+| Путь | Доступ | Описание |
+|---|---|---|
+| `/login`, `/register`, `/register/confirm` | публичный | Вход, регистрация, подтверждение почты |
+| `/onboarding` | авторизован, без тенанта | Создание рабочего пространства |
+| `/dashboard` | авторизован | Квоты, сводки, активность |
+| `/vms`, `/vms/:id` | авторизован | Список ВМ, страница ВМ с рекомендациями |
+| `/networks` | авторизован | Виртуальные сети |
+| `/profile` | авторизован | Профиль и безопасность |
+| `/admin` | admin | Статистика платформы |
+| `/admin/tenants`, `/admin/tenants/:id` | admin | Тенанты и квоты |
+| `/admin/vms` | admin | ВМ всех тенантов |
+| `/admin/audit` | admin | Журнал аудита |
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Защита маршрутов реализована компонентами `ProtectedRoute` и `AdminRoute`; страницы кроме публичных загружаются лениво (`React.lazy`).
+
+## Архитектура
+
+```
+Page / Component
+  └─ хук useXxx()           React Query: кэш, повторные запросы, инвалидация
+       └─ api/*.ts          типизированные функции над axios
+            └─ apiClient    общий axios-инстанс
+                 ├─ request:  подставляет Bearer-токен из authStore
+                 └─ response: 401 → refresh токена и повтор запроса,
+                              429 → предупреждение, 5xx → сообщение об ошибке
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+**Состояние.**
+- Серверные данные — TanStack Query. Ключи запросов собраны в одном месте (`api/queryKeys.ts`), после мутаций кэш инвалидируется.
+- Клиентское состояние — Zustand: `authStore` (пользователь, токены, флаги `isAdmin` и `hasTenant`) и `themeStore` (тема). В `sessionStorage` сохраняются только пользователь и refresh-токен; access-токен хранится в памяти.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+**API-клиент.** Запросы, упавшие с `401`, ставятся в очередь на время единственного запроса обновления токена и затем повторяются. Если обновить токен не удалось, пользователь разлогинивается и перенаправляется на `/login`.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Формы.** react-hook-form и схемы валидации zod (`src/lib/schemas`).
+
+## Стек
+
+| Область | Технологии |
+|---|---|
+| Основа | React 19, TypeScript 5.9, Vite 7 |
+| Маршрутизация | React Router 7 |
+| Данные и состояние | TanStack Query 5, Zustand 5, axios |
+| Формы и валидация | react-hook-form, zod 4 |
+| UI | Tailwind CSS 3, Radix UI (компоненты в стиле shadcn/ui), lucide-react, sonner, Recharts |
+| Тесты | Vitest 4, Testing Library, MSW, jsdom |
+| Качество кода | ESLint 9, typescript-eslint |
+| Деплой | Docker (сборка + nginx), конфигурация Vercel, GitHub Actions |
+
+## Запуск
+
+Нужен Node.js 20 (на нём работает CI) и запущенный [бэкенд](https://github.com/enterpraizer/Backend).
+
+```bash
+git clone https://github.com/enterpraizer/Frontend.git
+cd Frontend
+cp .env.example .env     # при необходимости поправьте адрес API
+npm install
+npm run dev              # http://localhost:5173
 ```
+
+Переменная окружения:
+
+| Переменная | По умолчанию | Назначение |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:8000` | Базовый URL бэкенда |
+
+Бэкенд разрешает CORS для `http://localhost:5173` и `http://localhost:3000`, поэтому в режиме разработки дополнительная настройка не нужна.
+
+### Скрипты
+
+| Команда | Что делает |
+|---|---|
+| `npm run dev` | Dev-сервер Vite |
+| `npm run build` | Проверка типов (`tsc -b`) и production-сборка в `dist/` |
+| `npm run preview` | Локальный просмотр сборки |
+| `npm run lint` | ESLint |
+| `npm run test` | Однократный прогон тестов Vitest |
+
+### Docker
+
+`Dockerfile` — двухэтапная сборка: приложение собирается в Node 20, статика раздаётся через nginx с fallback на `index.html` для клиентской маршрутизации. Адрес API задаётся build-аргументом `VITE_API_URL`.
+
+```bash
+docker build --build-arg VITE_API_URL=http://localhost:8000 -t cloudiaas-frontend .
+docker run -p 8080:80 cloudiaas-frontend
+```
+
+## Тесты
+
+Тесты написаны на Vitest и Testing Library, сетевые запросы подменяются через MSW (`src/tests/msw`). Есть тесты утилит, zod-схемы ВМ, компонентов `ResourceGauge` и `VMStatusBadge`, страниц входа и дашборда.
+
+```bash
+npm run test
+```
+
+В GitHub Actions (`frontend-ci.yml`) на push и pull request в `main` и `dev` выполняются проверка типов, линтер, тесты и сборка.
+
+## Структура проекта
+
+```
+src/
+├── api/                  # axios-клиент и функции по доменам (auth, vms, networks, dashboard, admin, users)
+├── components/
+│   ├── ui/               # базовые компоненты и общие виджеты (ResourceGauge, StatCard, VMStatusBadge …)
+│   ├── features/         # vms (AISuggestionCard, VMSuggestionCard, CreateVMModal), networks, quotas, admin, users
+│   └── layout/           # AppLayout, AdminLayout, Sidebar, Topbar
+├── hooks/                # React Query хуки: useVMs, useNetworks, useDashboard, useQuotas, useAdmin …
+├── pages/                # страницы маршрутов
+├── router/               # конфигурация маршрутов
+├── store/                # Zustand: authStore, themeStore
+├── lib/                  # утилиты, константы, zod-схемы
+├── types/                # общие TypeScript-типы
+└── tests/                # настройка тестов, MSW-обработчики, тесты
+```
+
+## Связанные репозитории
+
+- Backend: [enterpraizer/Backend](https://github.com/enterpraizer/Backend)
